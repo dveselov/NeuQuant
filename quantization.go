@@ -1,4 +1,4 @@
-package quantization
+package neuquant
 
 import (
 	"math"
@@ -51,8 +51,8 @@ func (n *NeuQuant) Init(img image.Image) {
 	n.Freq = nil
 	freq := float64(n.Netsize)
 	for i := 0; i < n.Netsize; i++ {
-		tmp := float64(i)
-		a := float64(255)
+		tmp := float64(i<<8) * 256 / float64(n.Netsize)
+		a := float64(255 << 8)
 		n.Network = append(n.Network, &Neuron{r: tmp, g: tmp, b: tmp, a: a})
 		n.Colormap = append(n.Colormap, &Color{r: 0, g: 0, b: 0, a: 0})
 		n.Bias = append(n.Bias, 0.0)
@@ -152,7 +152,7 @@ func (n *NeuQuant) alterNeigh(alpha float64, rad int, i int, quad Neuron) {
 // optimized for net sizes < 26 or > 256. 1064 colors seems to work fine
 func (n *NeuQuant) Learn(img image.Image) {
 	bounds := img.Bounds()
-	initrad := n.Netsize / 8
+	initrad := n.Netsize >> 3
 	radiusbiasshift := uint(6)
 	radiusbias := 1 << radiusbiasshift
 	init_bias_radius := initrad * radiusbias
