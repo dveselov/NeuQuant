@@ -16,7 +16,7 @@ const (
 	GAMMA           = 1024.0
 	BETA            = 1.0 / GAMMA
 	BETAGAMMA       = BETA * GAMMA
-	NCYCLES         = 300
+	NCYCLES         = 600
 )
 
 type Neuron struct {
@@ -51,8 +51,8 @@ func (n *NeuQuant) Init(img image.Image) {
 	n.Freq = nil
 	freq := float64(n.Netsize)
 	for i := 0; i < n.Netsize; i++ {
-		tmp := float64(i << 8)
-		a := float64(255 << 8)
+		tmp := float64(i)
+		a := float64(255)
 		n.Network = append(n.Network, &Neuron{r: tmp, g: tmp, b: tmp, a: a})
 		n.Colormap = append(n.Colormap, &Color{r: 0, g: 0, b: 0, a: 0})
 		n.Bias = append(n.Bias, 0.0)
@@ -159,6 +159,11 @@ func (n *NeuQuant) Learn(img image.Image) {
 	bias_radius := init_bias_radius
 	alphadec := float64(30<<8 + ((n.Samplefrac - 1) / 3))
 
+	delta := (bounds.Max.X * bounds.Max.Y) / n.Samplefrac / NCYCLES
+	if delta <= 0 {
+		delta = 1
+	}
+
 	alpha := float64(INIT_ALPHA)
 	rad := bias_radius >> radiusbiasshift
 	if rad <= 1 {
@@ -177,9 +182,7 @@ func (n *NeuQuant) Learn(img image.Image) {
 			if rad > 0 {
 				n.alterNeigh(alpha_, rad, j, Neuron{b: b_f64, g: g_f64, r: r_f64, a: a_f64})
 			}
-			// WARN
-			delta := bounds.Max.X + bounds.Max.Y/1024
-			if (x*y)%delta == 0 {
+			if (x > 0 && y > 0) && (x*y)%delta == 0 {
 				alpha -= alpha / alphadec
 				bias_radius -= bias_radius / RADIUS_DEC
 				rad = bias_radius >> radiusbiasshift
@@ -345,7 +348,7 @@ func NewNeuquant(samplefrac, colors int, img image.Image) NeuQuant {
 		Netindex:   make([]int, 0, 1<<16),
 		Bias:       make([]float64, 0, colors),
 		Freq:       make([]float64, 0, colors),
-		Samplefrac: samplefrac << 8,
+		Samplefrac: samplefrac,
 		Netsize:    colors,
 	}
 	q.Init(img)
